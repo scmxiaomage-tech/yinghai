@@ -1,0 +1,9 @@
+.home-carousel{height:210px;position:relative;overflow:hidden;border:1px solid #d6b46a70;border-radius:20px;background:#170d1d;box-shadow:0 12px 25px #34143e2b;touch-action:pan-y}
+.carousel-track{height:100%;display:flex;transition:transform .55s cubic-bezier(.22,.7,.25,1)}
+.carousel-slide{min-width:100%;height:100%;padding:23px 22px;background-size:cover;background-position:center;color:#fff}
+.carousel-slide>span{font:8px Georgia;letter-spacing:2.5px;color:#e0bd69}
+.carousel-slide h2{font:500 23px "Songti SC",serif;line-height:1.35;margin:9px 0 5px;text-shadow:0 2px 10px #000}.carousel-slide h2 span{display:block}
+.carousel-slide p{max-width:230px;overflow:hidden;color:#ddd0df;font-size:9px;line-height:1.5;white-space:nowrap;text-overflow:ellipsis;margin:0}
+.carousel-slide>button{border:0;border-radius:19px;background:linear-gradient(90deg,#c69f50,#f0d998);color:#2b1731;font-size:10px;font-weight:800;padding:8px 14px;margin-top:12px}
+.carousel-dots{position:absolute;left:22px;bottom:12px;display:flex;gap:6px}.carousel-dots button{width:5px;height:5px;border:0;border-radius:4px;background:#ffffff70;padding:0;transition:.25s}.carousel-dots button.active{width:20px;background:#e5c879}
+.carousel-count{position:absolute;right:14px;bottom:9px;color:#e2c982;font:8px Arial;letter-spacing:1px}

@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1a121d;
+  --purple: #3e174e;
+  --purple-2: #672879;
+  --gold: #d6b46a;
+  --gold-soft: #f1dfa9;
+  --pearl: #f7f2eb;
+  --paper: #fffdfa;
+  --muted: #8a7d8d;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: #eee9e4;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+button, input, select, textarea { font: inherit; }
+
+/* 全站数字规范：等高、等宽、端庄，避免价格与数据出现上下错落。 */
+html {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+.product-card strong,
+.card-tag-price,
+.sheet-price,
+.income-card h2,
+.income-card p b,
+.data-row b,
+.wallet b,
+.detail-price,
+.detail-price-row,
+.checkout-card-info strong,
+.checkout-paybar p,
+.quantity-stepper,
+.order-meta b,
+.checkout-products article > strong,
+.credential-box b,
+.success-index,
+.enterprise-price,
+.tier-list b,
+.stat-card h2,
+.donut b,
+.balance-now b,
+.client-result span,
+.steps i,
+.confirm .final dd,
+.confirm dd,
+table,
+input,
+select,
+input[type="tel"],
+input[inputmode="numeric"] {
+  font-family: Arial, "Microsoft YaHei", sans-serif !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
+  font-feature-settings: "lnum" 1, "tnum" 1 !important;
+  letter-spacing: 0 !important;
+}
+button { cursor: pointer; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise .35s ease both; }

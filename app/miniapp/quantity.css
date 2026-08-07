@@ -1,0 +1,70 @@
+.quantity-row {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #eee8ee;
+  margin-top: 12px;
+  padding: 12px 2px 0;
+}
+
+.quantity-row > div:first-child {
+  flex: 1;
+}
+
+.quantity-row b,
+.quantity-row span {
+  display: block;
+}
+
+.quantity-row b {
+  font-size: 10px;
+}
+
+.quantity-row span {
+  color: #968a98;
+  font-size: 8px;
+  margin-top: 4px;
+}
+
+.quantity-stepper {
+  height: 32px;
+  display: grid;
+  grid-template-columns: 31px 38px 31px;
+  overflow: hidden;
+  border: 1px solid #ddd5de;
+  border-radius: 9px;
+  background: #faf8f9;
+}
+
+.quantity-stepper button {
+  border: 0;
+  background: #f0eaf1;
+  color: #552160;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.quantity-stepper button:disabled {
+  color: #b9afb9;
+}
+
+.quantity-stepper input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: white;
+  color: #352839;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkout-products article > strong small {
+  display: block;
+  color: #9b8f9d;
+  font-size: 7px;
+  font-weight: 400;
+  margin-top: 3px;
+  text-align: right;
+}

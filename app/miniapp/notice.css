@@ -1,0 +1,107 @@
+.tips {
+  padding: 22px 3px 8px;
+}
+
+.tips-title {
+  border-bottom: 1px solid #ded5de;
+  padding-bottom: 11px;
+  margin-bottom: 13px;
+}
+
+.tips-title span {
+  font: 8px Georgia, serif;
+  letter-spacing: 2px;
+  color: #9d793e;
+}
+
+.tips-title h3 {
+  font: 500 20px "Songti SC", serif;
+  margin: 5px 0 0;
+  color: #35153f;
+}
+
+.tips ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: notice;
+}
+
+.tips li {
+  counter-increment: notice;
+  position: relative;
+  padding: 0 0 12px 27px;
+  color: #695e6c;
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+.tips li::before {
+  content: counter(notice);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 19px;
+  height: 19px;
+  border-radius: 7px;
+  background: #eee5ef;
+  color: #572163;
+  display: grid;
+  place-items: center;
+  font: 10px Georgia, serif;
+}
+
+.notice-service {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(110deg, #2d1237, #180e1c);
+  border-radius: 13px;
+  color: white;
+  padding: 12px;
+  margin-top: 3px;
+}
+
+.notice-service > i {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  border-radius: 11px;
+  background: #d2b56d;
+  color: #2c1533;
+  display: grid;
+  place-items: center;
+  font: 18px "Songti SC", serif;
+  font-style: normal;
+}
+
+.notice-service > div {
+  margin-left: 9px;
+}
+
+.notice-service b,
+.notice-service span {
+  display: block;
+}
+
+.notice-service b {
+  font-size: 11px;
+  color: #ead299;
+}
+
+.notice-service span {
+  font-size: 8px;
+  color: #bcaebf;
+  margin-top: 3px;
+}
+
+.notice-service button {
+  margin-left: auto;
+  border: 1px solid #d3b66d;
+  background: transparent;
+  color: #e8cf91;
+  border-radius: 14px;
+  padding: 5px 8px;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.redeem-back{width:34px;height:34px;border:1px solid #ddd1dc;border-radius:50%;background:#fff;color:#41194c;display:grid;place-items:center;font:26px/1 Arial;margin:0 0 10px;padding:0;box-shadow:0 4px 12px #35153e12}

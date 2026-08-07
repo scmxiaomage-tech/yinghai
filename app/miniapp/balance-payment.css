@@ -1,0 +1,9 @@
+.balance-deduction{width:100%;display:flex;align-items:center;border:1px solid #e8e0e8;border-radius:11px;background:#faf8f9;padding:10px;margin:0 0 12px;text-align:left}
+.balance-deduction.active{border-color:#c7a75f;background:#fcf8ec}
+.balance-deduction>i,.payments .balance-pay{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,#b88a37,#efd58c);color:#35123b;font-style:normal;font-weight:800}
+.balance-deduction>div{flex:1;margin-left:9px}
+.balance-deduction b,.balance-deduction span{display:block}
+.balance-deduction b{font-size:10px}
+.balance-deduction span{color:#968a98;font-size:7px;margin-top:4px}
+.balance-deduction>em{width:18px;height:18px;display:grid;place-items:center;border:1px solid #d8d0d8;border-radius:50%;color:#fff;font-size:9px;font-style:normal}
+.balance-deduction.active>em{border-color:#653072;background:#653072}

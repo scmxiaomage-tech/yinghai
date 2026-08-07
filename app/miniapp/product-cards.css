@@ -1,0 +1,110 @@
+.product-card {
+  padding: 8px;
+}
+
+.product-card > .gift-art {
+  height: 106px;
+}
+
+.product-card > .gift-art > b {
+  max-width: 92px;
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+.card-tag-price {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+}
+
+.card-tag-price em {
+  position: static !important;
+  border: 1px solid currentColor !important;
+  border-radius: 8px !important;
+  padding: 2px 5px !important;
+  font-size: 7px !important;
+  font-style: normal;
+}
+
+.card-tag-price strong {
+  margin-top: 3px;
+  color: inherit !important;
+  font-family: Arial, "Microsoft YaHei", sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
+}
+
+.card-tag-price del {
+  margin-top: 7px;
+  color: currentColor;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  font-size: 9px;
+  line-height: 1;
+  opacity: .66;
+  text-decoration-thickness: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-tag-price small {
+  margin-right: 2px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: baseline;
+}
+
+.card-gift-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 6px;
+  padding: 10px 1px 3px;
+}
+
+.card-gift-item {
+  min-width: 0;
+  text-align: center;
+}
+
+.card-gift-item > span {
+  width: 100%;
+  aspect-ratio: 1.35;
+  overflow: hidden;
+  display: block;
+  border: 1px solid #e9e1e7;
+  border-radius: 8px;
+  background: #f1edef;
+}
+
+.card-gift-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-gift-item:nth-child(4) img {
+  object-fit: contain;
+  padding: 3px;
+  background: #f6f2ee;
+}
+
+.card-gift-item > b {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  color: #5e5360;
+  font-size: 7px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,93 @@
+.income-card h2,
+.income-card > div b,
+.balance-card b,
+.wallet-balance-tip b,
+.withdraw-balance b,
+.report-summary b,
+.team-summary b,
+.team-total > b {
+  color: #fff4c2 !important;
+  text-shadow: 0 2px 10px rgba(0, 35, 62, .35);
+}
+
+.income-card h2 {
+  font-family: Arial, "Microsoft YaHei", sans-serif !important;
+  font-size: 52px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  margin-right: 150px !important;
+}
+
+.income-card > div b {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+}
+
+.income-card > span,
+.income-card small,
+.balance-card span,
+.balance-card small {
+  color: rgba(255, 255, 255, .88) !important;
+}
+
+.income-card > button,
+.balance-card button {
+  border-color: #ffd45a !important;
+  color: #fffbe6 !important;
+  background: rgba(0, 91, 150, .16) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+
+.income-card > button {
+  position: absolute !important;
+  right: 22px !important;
+  margin: -52px 0 0 0 !important;
+  min-width: 122px;
+  height: 48px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.balance-card button:first-child {
+  background: linear-gradient(135deg, #ffe08a, #f5a623) !important;
+  color: #003b63 !important;
+}
+
+.balance-card b {
+  font-size: 48px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+}
+
+.balance-card {
+  overflow: hidden;
+}
+
+.profile h2 {
+  color: #fff !important;
+}
+
+@media (max-width: 760px) {
+  .income-card h2 {
+    font-size: 37px !important;
+    margin-right: 108px !important;
+  }
+
+  .income-card > div b {
+    font-size: 18px !important;
+  }
+
+  .balance-card b {
+    font-size: 38px !important;
+  }
+
+  .income-card > button {
+    right: 18px !important;
+    min-width: 92px;
+    height: 38px;
+    margin-top: -40px !important;
+    font-size: 17px;
+  }
+}
