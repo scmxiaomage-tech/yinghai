@@ -1,0 +1,3 @@
+import { deleteCart, fail, response, updateCart } from "../../../../_lib/sprint3-store";
+export async function PUT(request:Request,{params}:{params:Promise<{id:string}>}){ try { const body=await request.json() as {quantity?:number}; return response(updateCart((await params).id,body.quantity??0)); } catch(error){ return fail(error instanceof Error?error.message:"修改购物车失败"); } }
+export async function DELETE(_request:Request,{params}:{params:Promise<{id:string}>}){ try { deleteCart((await params).id); return response(null,"已删除"); } catch(error){ return fail(error instanceof Error?error.message:"删除购物车失败"); } }

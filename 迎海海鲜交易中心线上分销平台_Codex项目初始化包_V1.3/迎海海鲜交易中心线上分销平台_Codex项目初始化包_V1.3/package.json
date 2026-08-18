@@ -1,0 +1,28 @@
+{
+  "name": "yinghai-seafood-distribution-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "迎海海鲜交易中心线上分销平台 Monorepo",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:r1-go-static": "node scripts/r1-go-static-test.cjs",
+    "test:r2-product-static": "node scripts/r2-product-static-test.cjs",
+    "test:r3-inventory-static": "node scripts/r3-inventory-static-test.cjs",
+    "test:r4-cart-static": "node scripts/r4-cart-static-test.cjs",
+    "test:r5-order-static": "node scripts/r5-order-static-test.cjs",
+    "test:r6-payment-static": "node scripts/r6-payment-static-test.cjs",
+    "test:r7-refund-static": "node scripts/r7-refund-static-test.cjs",
+    "typecheck": "turbo typecheck",
+    "db:v2:migrate:note": "echo \"Use golang-migrate against apps/go-api-server/migrations after DB V2 design freeze\""
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.0",
+    "prettier": "^3.3.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0"
+  }
+}

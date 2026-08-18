@@ -1,0 +1,2 @@
+import { Body, Controller, Post } from "@nestjs/common"; import { PaymentService } from "./payment.service";
+@Controller("payment/wechat") export class PaymentCallbackController {constructor(private readonly service:PaymentService){} @Post("notify") notify(@Body()body:unknown){return this.service.paymentNotify(body);}@Post("refund-notify") refund(@Body()body:unknown){return this.service.refundNotify(body);}}

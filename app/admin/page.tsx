@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import "./admin.css";
+import { OrderReadOnlyModal } from "./order-read-only-modal";
 
 type Product = { id:string; name:string; category:string; price:number; stock:number; sales:number; status:boolean };
 type Order = { id:string; user:string; scene:string; amount:number; status:string; time:string };
+type SprintAdminOrder = { id:string; orderNo:string; orderStatus:string; paymentStatus:string; payableAmount:number; createdAt:string; receiverName:string; receiverPhone:string; province:string; city:string; district:string; detailAddress:string; remark?:string; items:Array<{productName:string;skuName:string;quantity:number;unitPrice:number;subtotalAmount:number}> };
 
 const menus = [
   ["经营概览","⌂"],["商城商品","商"],["礼品卡管理","礼"],["订单中心","单"],["线上提货","提"],
@@ -42,6 +44,9 @@ export default function AdminPage(){
   const [adjust,setAdjust]=useState(false);
   const [step,setStep]=useState(1);
   const [editing,setEditing]=useState<Product|null>(null);
+  const [sprintOrders,setSprintOrders]=useState<SprintAdminOrder[]>([]);
+  const [sprintLoading,setSprintLoading]=useState(false);
+  const [sprintDetail,setSprintDetail]=useState<SprintAdminOrder|null>(null);
   const notify=(text:string)=>{setToast(text);window.setTimeout(()=>setToast(""),2200)};
   const filtered=useMemo(()=>products.filter(p=>`${p.name}${p.id}${p.category}`.includes(query)),[products,query]);
   const toggle=(id:string)=>setProducts(v=>v.map(p=>p.id===id?{...p,status:!p.status}:p));
@@ -60,7 +65,7 @@ export default function AdminPage(){
         {active==="经营概览"&&<Overview setActive={setActive}/>} 
         {active==="商城商品"&&<Products products={filtered} query={query} setQuery={setQuery} toggle={toggle} edit={setEditing} notify={notify}/>} 
         {active==="礼品卡管理"&&<GiftCards notify={notify}/>} 
-        {active==="订单中心"&&<Orders notify={notify}/>} 
+        {active==="订单中心"&&<Orders notify={notify} orders={sprintOrders} loading={sprintLoading} load={async()=>{setSprintLoading(true);try{const response=await fetch("/api/v1/admin/orders");const payload=await response.json();if(payload.code===0)setSprintOrders(payload.data);else notify(payload.message);}finally{setSprintLoading(false)}}} open={setSprintDetail}/>} 
         {active==="线上提货"&&<Redeem notify={notify}/>} 
         {active==="用户与VIP"&&<Users onAdjust={()=>setAdjust(true)} notify={notify}/>} 
         {active==="企业团购"&&<Enterprise notify={notify}/>} 
@@ -73,6 +78,7 @@ export default function AdminPage(){
     </section>
     {editing&&<Editor product={editing} close={()=>setEditing(null)} save={(p)=>{setProducts(v=>v.map(x=>x.id===p.id?p:x));setEditing(null);notify("商品资料已保存")}}/>}
     {adjust&&<BalanceModal step={step} setStep={setStep} close={()=>{setAdjust(false);setStep(1)}} done={()=>{setAdjust(false);setStep(1);notify("调账成功，审计流水 TZ202608040018 已生成")}}/>}
+    {sprintDetail&&<OrderReadOnlyModal order={sprintDetail} close={()=>setSprintDetail(null)}/>} 
     {toast&&<div className="admin-toast">✓ {toast}</div>}
   </main>
 }
@@ -88,7 +94,7 @@ function Products({products,query,setQuery,toggle,edit,notify}:{products:Product
 
 function GiftCards({notify}:{notify:(s:string)=>void}){return <><section className="rule-grid"><Rule title="发卡方式" value="实体卡 + 线上虚拟卡" note="购卡成功后由用户二选一"/><Rule title="佣金规则" value="按卡设置固定额或比例" note="支付成功后锁定两级佣金"/><Rule title="关系绑定" value="首笔推广支付后永久绑定" note="仅点击链接不绑定、永不覆盖"/></section><section className="panel"><PanelTitle title="礼品卡商品" sub="维护售价、包含商品、库存与发卡方式" action="新增礼品卡" click={()=>notify("礼品卡新建表单已打开")}/><SimpleTable heads={["编号","礼卡名称","原价","售价","包含商品","状态","操作"]} rows={cards} notify={notify}/></section></>}
 
-function Orders({notify}:{notify:(s:string)=>void}){return <><section className="stats"><Stat title="全部订单" value="8,629" note="本月新增 1,286"/><Stat title="待付款" value="36" note="30分钟自动关闭"/><Stat title="待发货" value="42" note="其中 8 单临近超时"/><Stat title="售后中" value="9" note="退款 / 退货 / 换货"/></section><section className="panel"><div className="chips"><button className="on">全部</button>{["待付款","待发货","待收货","已完成","已取消","退款/售后"].map(x=><button key={x}>{x}</button>)}</div><OrderTable rows={orders} notify={notify}/></section></>}
+function Orders({notify,orders:apiOrders,loading,load,open}:{notify:(s:string)=>void;orders:SprintAdminOrder[];loading:boolean;load:()=>void;open:(order:SprintAdminOrder)=>void}){return <><section className="notice-box"><b>Sprint3 订单中心 · 只读模式</b><span>仅查看订单、地址与商品快照；本期不允许后台改金额、改商品快照或人工修改订单状态。</span></section><section className="stats"><Stat title="全部订单" value={String(apiOrders.length)} note="当前 Sprint3 创建订单"/><Stat title="待付款" value={String(apiOrders.filter(order=>order.orderStatus==="pending_payment").length)} note="本期仅支持取消"/><Stat title="已取消" value={String(apiOrders.filter(order=>order.orderStatus==="cancelled").length)} note="支付、退款后续 Sprint"/><Stat title="本期成交额" value={`¥ ${apiOrders.reduce((sum,order)=>sum+order.payableAmount,0).toFixed(2)}`} note="待支付订单金额"/></section><section className="panel"><PanelTitle title="Sprint3 商城订单" sub="点击刷新读取当前订单数据，订单详情完全只读" action={loading?"读取中…":"刷新订单"} click={load}/><div className="table-wrap"><table><thead><tr><th>订单编号</th><th>收货人</th><th>商品</th><th>应付金额</th><th>订单状态</th><th>支付状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{apiOrders.map(order=><tr key={order.id}><td><b>{order.orderNo}</b></td><td>{order.receiverName} {order.receiverPhone}</td><td>{order.items.map(item=>`${item.productName} ×${item.quantity}`).join("、")}</td><td>¥ {order.payableAmount.toFixed(2)}</td><td><span className="status">{order.orderStatus==="pending_payment"?"待付款":"已取消"}</span></td><td><span className="status">未支付</span></td><td>{new Date(order.createdAt).toLocaleString("zh-CN")}</td><td><button onClick={()=>open(order)}>查看详情</button></td></tr>)}{!apiOrders.length&&<tr><td colSpan={8} className="empty-row">暂无 Sprint3 商城订单，前端提交订单后会在此显示。</td></tr>}</tbody></table></div></section></>}
 
 function Redeem({notify}:{notify:(s:string)=>void}){const rows=[["TH202608040181","8800 **** 5767","猫山王榴莲 5斤等4件","林悦 138****2801","顺丰 SF13920260804","配送中"],["TH202608030166","8800 **** 3812","金秋蟹王卡 4件","王女士 186****6328","待录入","待发货"]];return <><section className="notice-box"><b>当前仅支持线上快递提货</b><span>已按甲方最新需求移除城市切换、预约自提和线下核销。卡密验证成功后进入收货信息与配送流程。</span></section><section className="panel"><PanelTitle title="提货履约记录" sub="卡密验证、收货资料与物流状态"/><SimpleTable heads={["提货单号","礼卡账号","提货内容","收货人","物流单号","状态","操作"]} rows={rows} notify={notify}/></section></>}
 

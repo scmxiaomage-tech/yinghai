@@ -52,6 +52,7 @@ function contentsFor(productName: string) {
 }
 
 type View = "home" | "redeem" | "messages" | "cart" | "share" | "mine" | "enterprise";
+type SprintOrder = { id:string; orderNo:string; orderStatus:"pending_payment"|"cancelled"; paymentStatus:"unpaid"; goodsAmount:number; deliveryFee:number; payableAmount:number; createdAt:string; receiverName:string; receiverPhone:string; province:string; city:string; district:string; detailAddress:string; remark?:string; items:Array<{ productName:string; skuName:string; mainImageUrl:string; unitPrice:number; quantity:number; subtotalAmount:number }> };
 type OwnedCard = { id: string; productName: string; tone: string; number: string; password: string; status: "未使用" | "已使用"; boughtAt: string };
 type Address = { id: number; name: string; phone: string; text: string; primary: boolean };
 type AppMessage = { id: number; type: "订单" | "物流" | "佣金" | "活动"; title: string; text: string; time: string; unread: boolean; tone: "purple" | "blue" | "green" | "orange"; icon: string };
@@ -65,6 +66,7 @@ export default function MiniappPage() {
   const [checkout, setCheckout] = useState<(typeof products)[0] | null>(null);
   const [toast, setToast] = useState("");
   const [shopCart, setShopCart] = useState<Record<number, number>>({});
+  const [shopOrders, setShopOrders] = useState<SprintOrder[]>([]);
   const [selectedShopProduct, setSelectedShopProduct] = useState<(typeof shopProducts)[number] | null>(null);
   const [storeOpen, setStoreOpen] = useState(false);
   const [activeStoreProduct, setActiveStoreProduct] = useState<(typeof shopProducts)[number] | null>(null);
@@ -144,9 +146,9 @@ export default function MiniappPage() {
 
           {view === "redeem" && <Redeem city={city} onBack={redeemFromGift ? openGiftHome : undefined} onDone={() => flash("卡券验证成功，请选择兑换商品")} />}
           {view === "messages" && <MessageCenter messages={messages} setMessages={setMessages} />}
-          {view === "cart" && <ShopCartPage cart={shopCart} setCart={setShopCart} flash={flash} onShop={() => { setView("home"); setHomeMode("shop"); }} />}
+          {view === "cart" && <ShopCartPage cart={shopCart} setCart={setShopCart} flash={flash} onShop={() => { setView("home"); setHomeMode("shop"); }} onOrderCreated={(order) => { setShopOrders((current) => [order, ...current]); pushMessage({ type: "订单", title: "生鲜订单已创建", text: `订单 ${order.orderNo} 已创建，等待支付。`, tone: "purple", icon: "单" }); }} />}
           {view === "share" && <ShareCenter flash={flash} />}
-          {view === "mine" && <Mine cards={ownedCards} addresses={addresses} setAddresses={setAddresses} flash={flash} onEnterprise={() => setView("enterprise")} />}
+          {view === "mine" && <Mine cards={ownedCards} addresses={addresses} setAddresses={setAddresses} flash={flash} onEnterprise={() => setView("enterprise")} shopOrders={shopOrders} setShopOrders={setShopOrders} />}
           {view === "enterprise" && <EnterpriseGroupPage onBack={() => setView("home")} />}
           {selectedShopProduct && <ShopProductDetail product={selectedShopProduct} onBack={() => setSelectedShopProduct(null)} onStore={() => { setActiveStoreProduct(selectedShopProduct); setSelectedShopProduct(null); setStoreOpen(true); }} onAdd={() => { setShopCart((current) => ({ ...current, [selectedShopProduct.id]: (current[selectedShopProduct.id] || 0) + 1 })); flash("已加入购物车"); }} />}
           {storeOpen && <UnifiedSeafoodStore store={storeForProduct(activeStoreProduct || shopProducts[0])} onBack={() => setStoreOpen(false)} flash={flash} onOpenDetail={(product) => { setStoreOpen(false); setSelectedShopProduct(product); }} />}
@@ -252,6 +254,17 @@ const shopProducts = [
 ];
 
 const seafoodProductImage = (product: (typeof shopProducts)[number]) => product.id <= 9 ? `/assets/seafood-skus/sku-${product.id}.jpg` : `/assets/products/${product.image}.webp`;
+
+// Sprint3 的购物车以商品 SKU 为准，前端只提交 SKU 与数量，金额完全由后端重新计算。
+const skuForShopProduct = (product: (typeof shopProducts)[number]) => {
+  const skuByProductId: Record<number, string> = {
+    1: "sku-king-crab", 2: "sku-lobster", 3: "sku-swimming-crab", 4: "sku-mitten-crab", 5: "sku-green-crab",
+    6: "sku-king-crab", 7: "sku-lobster", 8: "sku-swimming-crab", 9: "sku-mitten-crab", 10: "sku-green-crab",
+    11: "sku-swimming-crab", 12: "sku-lobster", 13: "sku-king-crab", 14: "sku-mitten-crab", 15: "sku-green-crab",
+    16: "sku-lobster", 17: "sku-swimming-crab", 18: "sku-king-crab",
+  };
+  return skuByProductId[product.id] ?? "sku-green-crab";
+};
 const seafoodStores = [
   { name: "东海鲜捕旗舰店", logo: "东", tone: "#005b96" }, { name: "北海渔港直供店", logo: "北", tone: "#157caa" },
   { name: "深蓝海产严选店", logo: "深", tone: "#0c6684" }, { name: "舟山海味官方店", logo: "舟", tone: "#147d9d" },
@@ -463,42 +476,54 @@ function UnifiedSeafoodStore({ onBack, flash, onOpenDetail, store }: { onBack: (
   </section>;
 }
 
-function ShopCartPage({ cart, setCart, flash, onShop }: {
+function ShopCartPage({ cart, setCart, flash, onShop, onOrderCreated }: {
   cart: Record<number, number>;
   setCart: Dispatch<SetStateAction<Record<number, number>>>;
   flash: (message: string) => void;
   onShop: () => void;
+  onOrderCreated: (order: SprintOrder) => void;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [useBalance, setUseBalance] = useState(false);
-  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [remark, setRemark] = useState("");
+  const [deliveryRiskConfirmed, setDeliveryRiskConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const items = shopProducts.filter((item) => cart[item.id]);
-  const cartCount = Object.values(cart).reduce((sum, count) => sum + count, 0);
-  const cartTotal = items.reduce((sum, item) => sum + item.price * cart[item.id], 0);
-  const validCouponDiscount = (couponDiscount === 50 && cartTotal >= 299) || (couponDiscount === 20 && cartTotal >= 199) ? couponDiscount : 0;
-  const deduction = useBalance ? Math.min(20, Math.max(0, cartTotal - validCouponDiscount)) : 0;
-  const payable = Math.max(0, cartTotal - validCouponDiscount - deduction);
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const valid = current.filter((id) => items.some((item) => item.id === id));
+      return valid.length || !items.length ? valid : items.map((item) => item.id);
+    });
+  }, [items.length]);
+  const selectedItems = items.filter((item) => selectedIds.includes(item.id));
+  const cartCount = selectedItems.reduce((sum, item) => sum + cart[item.id], 0);
+  const cartTotal = selectedItems.reduce((sum, item) => sum + item.price * cart[item.id], 0);
+  const deliveryFee = cartTotal >= 199 ? 0 : 20;
+  const payable = cartTotal + deliveryFee;
   const changeCart = (id: number, amount: number) => setCart((current) => {
     const next = Math.max(0, (current[id] || 0) + amount);
     const updated = { ...current, [id]: next };
     if (!next) delete updated[id];
     return updated;
   });
+  const toggleItem = (id: number) => setSelectedIds((current) => current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id]);
+  const toggleAll = () => setSelectedIds(selectedIds.length === items.length ? [] : items.map((item) => item.id));
 
   return <div className="shop-cart-page subpage animate-rise">
     <SubTitle en="SHOPPING CART" title="购物车" desc="生鲜好物统一结算，礼品卡仍直接购买" />
     {!items.length ? <section className="cart-empty"><i>购</i><h3>购物车还是空的</h3><p>去商城挑选新鲜好物吧</p><button onClick={onShop}>去逛商城</button></section> : <>
       <section className="cart-product-list">
         {items.map((item) => <article className="cart-product-row" key={item.id}>
-          <img src={`/assets/shop/${item.image}.webp`} alt={item.name} />
+          <button aria-label={`选择${item.name}`} className={`cart-select ${selectedIds.includes(item.id) ? "selected" : ""}`} onClick={() => toggleItem(item.id)}>✓</button>
+          <img src={seafoodProductImage(item)} alt={item.name} />
           <div><h3>{item.name}</h3><p>{item.intro}</p><b>¥{item.price.toFixed(2)}</b></div>
           <div className="shop-stepper"><button onClick={() => changeCart(item.id, -1)}>−</button><b>{cart[item.id]}</b><button onClick={() => changeCart(item.id, 1)}>＋</button></div>
         </article>)}
       </section>
       <section className="cart-summary-card"><p><span>商品数量</span><b>{cartCount} 件</b></p><p><span>商品金额</span><b>¥{cartTotal.toFixed(2)}</b></p><p><span>配送费</span><b>结算时计算</b></p></section>
-      <div className="cart-checkout-footer"><p><span>合计</span><b>¥{cartTotal.toFixed(2)}</b></p><button onClick={() => setCheckoutOpen(true)}>去结算（{cartCount}）</button></div>
+      <div className="cart-checkout-footer"><button className={`cart-select-all ${selectedIds.length === items.length ? "selected" : ""}`} onClick={toggleAll}>✓ 全选</button><p><span>合计</span><b>¥{cartTotal.toFixed(2)}</b></p><button onClick={() => { if (!selectedItems.length) { flash("请先勾选需要结算的商品"); return; } setCheckoutOpen(true); }}>去结算（{cartCount}）</button></div>
     </>}
-    {checkoutOpen && <div className="shop-checkout-overlay"><section className="shop-checkout-sheet"><button className="shop-sheet-close" onClick={() => setCheckoutOpen(false)}>×</button><span>FRESH ORDER</span><h3>确认生鲜订单</h3><div className="shop-order-items">{items.map((item) => <p key={item.id}><b>{item.name}</b><span>×{cart[item.id]}</span><strong>¥{(item.price * cart[item.id]).toFixed(2)}</strong></p>)}</div><label>配送方式<select><option>社区自提点</option><option>冷链配送到家</option></select></label><label>收货信息<input defaultValue="陈先生 138****6688" /></label><label>商城优惠券<select value={couponDiscount} onChange={(e) => setCouponDiscount(Number(e.target.value))}><option value="0">不使用优惠券</option><option value="50" disabled={cartTotal < 299}>商城生鲜券 · 满299减50{cartTotal < 299 ? "（未达门槛）" : ""}</option><option value="20">全场通用券 · 满199减20</option></select></label><button className={`shop-wallet ${useBalance ? "active" : ""}`} onClick={() => setUseBalance(!useBalance)}><i>{useBalance ? "✓" : ""}</i><p><b>钱包余额抵扣</b><span>本单可抵扣 ¥{Math.min(20, Math.max(0, cartTotal - validCouponDiscount)).toFixed(2)}</span></p></button><div className="shop-order-total"><span>实付金额{validCouponDiscount > 0 && ` · 已减¥${validCouponDiscount}`}</span><b>¥{payable.toFixed(2)}</b></div><button className="shop-submit" onClick={() => { setCheckoutOpen(false); setCart({}); flash("订单提交成功，可在“我的订单”中查看"); }}>微信支付并提交订单</button></section></div>}
+    {checkoutOpen && <div className="shop-checkout-overlay"><section className="shop-checkout-sheet"><button className="shop-sheet-close" onClick={() => setCheckoutOpen(false)}>×</button><span>FRESH ORDER</span><h3>确认生鲜订单</h3><div className="shop-order-items">{selectedItems.map((item) => <p key={item.id}><b>{item.name}</b><span>×{cart[item.id]}</span><strong>¥{(item.price * cart[item.id]).toFixed(2)}</strong></p>)}</div><label>收货地址<input readOnly value="陈先生 138****6688 · 上海市浦东新区华夏东路685号8幢206室" /></label><div className="delivery-preview"><b>冷链配送到家</b><span>当前地址在配送范围内 · 满199元免配送费</span></div><label>订单备注<textarea value={remark} onChange={(event) => setRemark(event.target.value.slice(0,255))} placeholder="选填，请填写配送或商品备注" /></label><div className="shop-order-total"><span>商品金额</span><b>¥{cartTotal.toFixed(2)}</b></div><div className="shop-order-total"><span>配送费</span><b>¥{deliveryFee.toFixed(2)}</b></div><div className="shop-order-total"><span>应付金额</span><b>¥{payable.toFixed(2)}</b></div><button className="shop-submit" disabled={submitting} onClick={async () => { setSubmitting(true); try { const result=await fetch("/api/v1/app/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({addressId:"address-demo-001",items:selectedItems.map((item)=>({skuId:skuForShopProduct(item),quantity:cart[item.id]})),remark,deliveryRiskConfirmed})}); const payload=await result.json(); if(payload.code!==0) throw new Error(payload.message); onOrderCreated(payload.data); setCart({}); setCheckoutOpen(false); flash("订单已创建，等待支付，可在我的订单查看"); } catch(error){ flash(error instanceof Error?error.message:"订单创建失败"); } finally { setSubmitting(false); } }}>提交订单（待支付）</button></section></div>}
   </div>;
 }
 
@@ -1066,12 +1091,14 @@ function DetailRows({ rows }: { rows: string[][] }) {
   return <section className="detail-rows">{rows.map((row, index) => <article key={`${row[0]}-${index}`}><div><b>{row[1]}</b><span>{row[0]}</span><small>{row[2]}</small></div><p><strong>{row[3]}</strong><em>{row[4]}</em></p></article>)}</section>;
 }
 
-function Mine({ cards, addresses, setAddresses, flash, onEnterprise }: {
+function Mine({ cards, addresses, setAddresses, flash, onEnterprise, shopOrders, setShopOrders }: {
   cards: OwnedCard[];
   addresses: Address[];
   setAddresses: Dispatch<SetStateAction<Address[]>>;
   flash: (message: string) => void;
   onEnterprise: () => void;
+  shopOrders: SprintOrder[];
+  setShopOrders: Dispatch<SetStateAction<SprintOrder[]>>;
 }) {
   const [panel, setPanel] = useState<"vip" | "cards" | "orders" | "records" | "addresses" | "coupons" | "settings" | "service" | null>(null);
   const [activeCard, setActiveCard] = useState<OwnedCard | null>(null);
@@ -1111,7 +1138,9 @@ function Mine({ cards, addresses, setAddresses, flash, onEnterprise }: {
     { id:"GK20260722113820", status:"退款/售后", name:"东方茗礼", spec:"退款申请审核中", qty:1, amount:"¥688.00", time:"07月22日", actions:["查看进度","补充凭证","联系客服"] },
     { id:"SX20260718102866", status:"已取消", name:"阳澄湖大闸蟹礼盒", spec:"用户取消", qty:1, amount:"¥398.00", time:"07月18日", actions:["删除订单","再次购买"] },
   ];
-  const visibleMemberOrders = memberOrders.filter((order) => orderFilter === "全部" || order.status === orderFilter);
+  const sprintOrderCards = shopOrders.map((order) => ({ id:order.orderNo, status:order.orderStatus === "cancelled" ? "已取消" : "待付款", name:order.items.map((item)=>item.productName).join("、"), spec:"冷链配送到家", qty:order.items.reduce((sum,item)=>sum+item.quantity,0), amount:`¥${order.payableAmount.toFixed(2)}`, time:new Date(order.createdAt).toLocaleString("zh-CN",{hour:"2-digit",minute:"2-digit"}), actions:order.orderStatus === "pending_payment"?["取消订单","查看详情"]:["查看详情","再次购买"], sprint:order }));
+  const combinedMemberOrders = [...sprintOrderCards, ...memberOrders];
+  const visibleMemberOrders = combinedMemberOrders.filter((order) => orderFilter === "全部" || order.status === orderFilter);
   const titles = { vip: "我的VIP", cards: "我的礼品卡", orders: "我的订单", records: "提货记录", addresses: "我的地址", coupons: "我的优惠券", settings: "账号设置", service: "在线客服" };
   useEffect(() => {
     if (panel === "vip" && vipCarouselRef.current) vipCarouselRef.current.scrollTo({ left: vipCarouselRef.current.clientWidth * vipSlide, behavior: "smooth" });
@@ -1142,7 +1171,7 @@ function Mine({ cards, addresses, setAddresses, flash, onEnterprise }: {
             <p className="vip-swipe-hint">当前等级已高亮 · 向左查看已解锁等级，向右查看更高等级</p>
           </div>}
           {panel === "cards" && <><p className="page-tip">购卡成功后会自动保存至此。点击卡片可查看二维码、账号和密码。</p><section className="owned-card-list">{cards.map((card) => <button key={card.id} onClick={() => setActiveCard(card)}><div className={`owned-card-art ${card.tone}`}><span>SEASONS GIFT</span><b>{card.productName}</b><em>{card.status}</em></div><p><span>卡号 {card.number}</span><small>购买于 {card.boughtAt}</small></p><strong>查看卡券 ›</strong></button>)}</section></>}
-          {panel === "orders" && <><div className="order-tabs full-tabs">{["全部","待付款","待发货","待收货","已完成","退款/售后"].map((status) => <button className={orderFilter === status ? "active" : ""} key={status} onClick={() => setOrderFilter(status)}>{status}</button>)}</div><section className="member-orders rich-orders">{visibleMemberOrders.map((order) => <article key={order.id}><header><span>{order.time} · {order.id}</span><em className={order.status === "已完成" ? "green-text" : order.status === "退款/售后" ? "refund-text" : ""}>{order.status}</em></header><div className="order-product"><i>{order.id.startsWith("GK") ? "礼" : "鲜"}</i><p><b>{order.name}</b><span>{order.spec}</span></p><strong>×{order.qty}</strong></div><p>共{order.qty}件　实付 <b>{order.amount}</b></p><div>{order.actions.map((action,index) => <button className={index === order.actions.length - 1 && ["继续支付","确认收货","评价"].includes(action) ? "primary-action" : ""} key={action} onClick={() => flash(action === "查看物流" ? "物流详情已打开：商品正在运输中" : `${action}功能已打开`)}>{action}</button>)}</div></article>)}</section>{!visibleMemberOrders.length && <div className="orders-empty">当前分类暂无订单</div>}</>}
+          {panel === "orders" && <><div className="order-tabs full-tabs">{["全部","待付款","待发货","待收货","已完成","退款/售后"].map((status) => <button className={orderFilter === status ? "active" : ""} key={status} onClick={() => setOrderFilter(status)}>{status}</button>)}</div><section className="member-orders rich-orders">{visibleMemberOrders.map((order) => <article key={order.id}><header><span>{order.time} · {order.id}</span><em className={order.status === "已完成" ? "green-text" : order.status === "退款/售后" ? "refund-text" : ""}>{order.status}</em></header><div className="order-product"><i>{order.id.startsWith("GK") ? "礼" : "鲜"}</i><p><b>{order.name}</b><span>{order.spec}</span></p><strong>×{order.qty}</strong></div><p>共{order.qty}件　实付 <b>{order.amount}</b></p><div>{order.actions.map((action,index) => <button className={index === order.actions.length - 1 && ["继续支付","确认收货","评价"].includes(action) ? "primary-action" : ""} key={action} onClick={() => { if(action === "取消订单" && "sprint" in order){ const sprint=order.sprint as SprintOrder; fetch(`/api/v1/app/orders/${sprint.id}/cancel`,{method:"PUT"}).then((res)=>res.json()).then((payload)=>{ if(payload.code===0){ setShopOrders((current)=>current.map((item)=>item.id===sprint.id?{...item,orderStatus:"cancelled"}:item)); flash("订单已取消"); } else flash(payload.message); }); } else if(action === "查看详情" && "sprint" in order) { flash(`订单 ${order.id}：待付款，可在30分钟内完成支付`); } else flash(action === "查看物流" ? "物流详情已打开：商品正在运输中" : `${action}功能已打开`); }}>{action}</button>)}</div></article>)}</section>{!visibleMemberOrders.length && <div className="orders-empty">当前分类暂无订单</div>}</>}
           {panel === "records" && <DetailRows rows={[["2026-07-24 10:28","四季臻鲜礼卡","猫山王榴莲 5斤","快递提货","已发货"],["2026-06-18 15:06","金秋蟹礼卡","阳澄湖大闸蟹 6只","浦东仓储站","已完成"]]} />}
           {panel === "addresses" && <><section className="address-list">{addresses.map((address) => <article key={address.id}><p><b>{address.name}</b><span>{address.phone}</span>{address.primary && <em>默认</em>}</p><div>{address.text}</div><footer><button onClick={() => setAddresses(addresses.map((item) => ({...item, primary:item.id === address.id})))}>设为默认</button><button onClick={() => flash("地址编辑功能已打开")}>编辑</button><button onClick={() => setAddresses(addresses.filter((item) => item.id !== address.id))}>删除</button></footer></article>)}</section><button className="wide-gold" onClick={() => { setAddresses([...addresses,{id:Date.now(),name:"新联系人",phone:"待完善",text:"点击编辑填写新收货地址",primary:false}]); flash("已新增地址，请点击编辑完善"); }}>＋ 新增收货地址</button></>}
           {panel === "coupons" && <><div className="coupon-category-tabs">{(["全部","商城","礼品卡"] as const).map((category) => <button className={couponCategory === category ? "active" : ""} key={category} onClick={() => setCouponCategory(category)}>{category}</button>)}</div><p className="coupon-rule-note">结算时系统会按商品范围、使用门槛和有效期筛选可用优惠券。</p><section className="coupon-list rich">{visibleCoupons.map((coupon) => <article className={coupon.status !== "可使用" ? "used" : ""} key={coupon.id}><b><small>¥</small>{coupon.amount}</b><div><h3>{coupon.name}<em>{coupon.category}</em></h3><p>{coupon.threshold}</p><small>来源：{coupon.source} · {coupon.expires}到期</small></div><button disabled={coupon.status !== "可使用"} onClick={() => flash(coupon.category === "商城" ? "已为您切换到商城，可在结算时选择此券" : "已为您切换到礼品卡，可在结算时选择此券")}>{coupon.status === "可使用" ? "去使用" : coupon.status}</button></article>)}</section></>}

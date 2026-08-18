@@ -1,0 +1,56 @@
+ALTER TABLE inventory_transactions
+  DROP INDEX uk_inventory_transactions_reference,
+  ADD UNIQUE KEY uk_inventory_transactions_sku_reference (sku_id, reference_type, reference_id, type);
+
+CREATE TABLE orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_no VARCHAR(32) NOT NULL,
+  user_id CHAR(36) NOT NULL,
+  request_id VARCHAR(64) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'PENDING_PAYMENT',
+  item_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  discount_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  shipping_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  payable_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  receiver_name VARCHAR(64) NOT NULL,
+  receiver_phone VARCHAR(32) NOT NULL,
+  receiver_address VARCHAR(255) NOT NULL,
+  buyer_remark VARCHAR(255) NULL,
+  cancel_reason VARCHAR(255) NULL,
+  expire_at DATETIME(3) NOT NULL,
+  paid_at DATETIME(3) NULL,
+  cancelled_at DATETIME(3) NULL,
+  closed_at DATETIME(3) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_orders_order_no (order_no),
+  UNIQUE KEY uk_orders_user_request (user_id, request_id),
+  KEY idx_orders_user_status (user_id, status),
+  KEY idx_orders_status_expire_at (status, expire_at),
+  KEY idx_orders_created_at (created_at),
+  CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE order_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  sku_id BIGINT UNSIGNED NOT NULL,
+  product_name VARCHAR(128) NOT NULL,
+  sku_name VARCHAR(128) NOT NULL,
+  product_image VARCHAR(512) NULL,
+  unit_price BIGINT UNSIGNED NOT NULL,
+  quantity INT UNSIGNED NOT NULL,
+  subtotal BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_order_items_order_id (order_id),
+  KEY idx_order_items_product_id (product_id),
+  KEY idx_order_items_sku_id (sku_id),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id),
+  CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products(id),
+  CONSTRAINT fk_order_items_sku FOREIGN KEY (sku_id) REFERENCES skus(id),
+  CONSTRAINT chk_order_items_quantity_positive CHECK (quantity >= 1),
+  CONSTRAINT chk_order_items_price_non_negative CHECK (unit_price >= 0 AND subtotal >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

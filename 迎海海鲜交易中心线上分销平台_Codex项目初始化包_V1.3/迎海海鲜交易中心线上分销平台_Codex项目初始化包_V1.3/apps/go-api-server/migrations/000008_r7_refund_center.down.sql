@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS refund_events;
+DROP TABLE IF EXISTS refunds;

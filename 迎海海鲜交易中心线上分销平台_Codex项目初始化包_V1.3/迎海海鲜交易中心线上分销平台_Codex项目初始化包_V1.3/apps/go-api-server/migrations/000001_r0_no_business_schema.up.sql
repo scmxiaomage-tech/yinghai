@@ -1,0 +1,2 @@
+-- R0 infrastructure placeholder.
+-- No business tables are created in this stage.

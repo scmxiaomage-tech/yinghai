@@ -1,0 +1,2 @@
+-- R0 infrastructure placeholder rollback.
+-- No business tables are dropped in this stage.
